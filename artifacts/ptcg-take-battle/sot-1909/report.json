@@ -1,0 +1,287 @@
+{
+  "schemaVersion": "ptcg-take-runtime-league/v1",
+  "issue": "SOT-1874",
+  "profile": "take-adaptive-tempo-v1",
+  "takeRepo": "/workspaces/ai-dev-control-plane/.targets/ptcg-agent-take",
+  "seed": 1909,
+  "gamesPerOpponent": 2,
+  "opponents": [
+    "zero"
+  ],
+  "matches": [
+    {
+      "opponent": "zero",
+      "index": 0,
+      "takeSeat": 0,
+      "take_seat": 0,
+      "take_won": true,
+      "winner": 0,
+      "fault": null,
+      "reason": 3,
+      "think_ms": [
+        {
+          "seat": 0,
+          "value": 0.198
+        },
+        {
+          "seat": 0,
+          "value": 6.649
+        },
+        {
+          "seat": 1,
+          "value": 0.158
+        },
+        {
+          "seat": 0,
+          "value": 0.282
+        },
+        {
+          "seat": 0,
+          "value": 0.121
+        },
+        {
+          "seat": 1,
+          "value": 0.113
+        },
+        {
+          "seat": 1,
+          "value": 0.065
+        },
+        {
+          "seat": 1,
+          "value": 0.059
+        },
+        {
+          "seat": 0,
+          "value": 0.218
+        },
+        {
+          "seat": 0,
+          "value": 0.167
+        },
+        {
+          "seat": 0,
+          "value": 0.127
+        },
+        {
+          "seat": 0,
+          "value": 0.167
+        },
+        {
+          "seat": 0,
+          "value": 0.194
+        },
+        {
+          "seat": 1,
+          "value": 0.121
+        },
+        {
+          "seat": 1,
+          "value": 0.073
+        },
+        {
+          "seat": 1,
+          "value": 0.102
+        },
+        {
+          "seat": 1,
+          "value": 0.088
+        },
+        {
+          "seat": 0,
+          "value": 0.247
+        },
+        {
+          "seat": 0,
+          "value": 0.148
+        },
+        {
+          "seat": 1,
+          "value": 0.1
+        },
+        {
+          "seat": 1,
+          "value": 0.075
+        },
+        {
+          "seat": 1,
+          "value": 0.088
+        },
+        {
+          "seat": 1,
+          "value": 0.08
+        },
+        {
+          "seat": 0,
+          "value": 0.304
+        },
+        {
+          "seat": 0,
+          "value": 0.206
+        }
+      ]
+    },
+    {
+      "opponent": "zero",
+      "index": 1,
+      "takeSeat": 1,
+      "take_seat": 1,
+      "take_won": true,
+      "winner": 1,
+      "fault": null,
+      "reason": 3,
+      "think_ms": [
+        {
+          "seat": 0,
+          "value": 0.06
+        },
+        {
+          "seat": 0,
+          "value": 0.069
+        },
+        {
+          "seat": 1,
+          "value": 0.175
+        },
+        {
+          "seat": 0,
+          "value": 0.062
+        },
+        {
+          "seat": 0,
+          "value": 0.058
+        },
+        {
+          "seat": 0,
+          "value": 0.06
+        },
+        {
+          "seat": 0,
+          "value": 0.059
+        },
+        {
+          "seat": 0,
+          "value": 0.059
+        },
+        {
+          "seat": 1,
+          "value": 0.269
+        },
+        {
+          "seat": 1,
+          "value": 0.258
+        },
+        {
+          "seat": 1,
+          "value": 0.15
+        },
+        {
+          "seat": 1,
+          "value": 0.125
+        },
+        {
+          "seat": 0,
+          "value": 0.119
+        },
+        {
+          "seat": 0,
+          "value": 0.072
+        },
+        {
+          "seat": 1,
+          "value": 2.683
+        },
+        {
+          "seat": 1,
+          "value": 0.176
+        },
+        {
+          "seat": 1,
+          "value": 0.246
+        },
+        {
+          "seat": 1,
+          "value": 0.171
+        },
+        {
+          "seat": 1,
+          "value": 0.151
+        },
+        {
+          "seat": 1,
+          "value": 0.229
+        },
+        {
+          "seat": 0,
+          "value": 0.124
+        },
+        {
+          "seat": 0,
+          "value": 0.163
+        },
+        {
+          "seat": 0,
+          "value": 0.08
+        },
+        {
+          "seat": 1,
+          "value": 0.241
+        },
+        {
+          "seat": 1,
+          "value": 0.172
+        },
+        {
+          "seat": 1,
+          "value": 0.19
+        },
+        {
+          "seat": 0,
+          "value": 0.096
+        },
+        {
+          "seat": 0,
+          "value": 0.084
+        },
+        {
+          "seat": 0,
+          "value": 0.071
+        },
+        {
+          "seat": 1,
+          "value": 0.258
+        },
+        {
+          "seat": 1,
+          "value": 0.178
+        }
+      ]
+    }
+  ],
+  "status": "complete",
+  "summary": {
+    "cards": [
+      {
+        "opponent": "zero",
+        "games": 2,
+        "wins": 2,
+        "losses": 0,
+        "winRate": 1.0,
+        "wilson95": [
+          0.3424,
+          1.0
+        ],
+        "faults": 0,
+        "unfinished": 0,
+        "illegalActions": 0
+      }
+    ],
+    "leagueWinRate": 1.0,
+    "safety": {
+      "faults": 0,
+      "unfinished": 0,
+      "illegalActions": 0,
+      "maxTakeDecisionMs": 6.649
+    }
+  }
+}
