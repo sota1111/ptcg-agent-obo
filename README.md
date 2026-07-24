@@ -24,6 +24,36 @@ Kaggle の [PTCG AI Battle Challenge Simulation](https://www.kaggle.com/competit
 - 公式 API には仮想状態を作る `search_begin`、分岐を進める `search_step`、解放する `search_end` / `search_release` がある。
 - 勝敗にはサイド、場のポケモン、山札切れなど複数の条件があるため、単純なダメージ最大化では足りない。
 
+## 認証済み Kaggle Rules の確認結果
+
+2026-07-24 に、参加承諾済みアカウントで Kaggle CLI から Competition の Rules、
+Evaluation、Timeline、Submission、FAQ を取得し、`ptcg-agent-core` の
+`docs/kaggle-submission.md` と照合しました。戦略と運用に影響する最新条件は次の通りです。
+
+- 1チームは最大5人、1日最大5提出、最終審査に選べる提出は最大2件。
+- 新規参加・チーム統合期限は **2026-08-09 23:59 UTC**、最終提出期限は
+  **2026-08-16 23:59 UTC**。その後、概ね2026-08-31まで対戦を継続して最終順位を確定する。
+- 提出物はトップレベルに `main.py` と `deck.csv` を含む `.tar.gz`。ファイルは
+  `/kaggle_simulations/agent/` に配置されるため、import と相対パスはこの実行位置に対応させる。
+- 各提出は最初に自分自身との Validation Episode を行う。成功時は
+  `μ0=600` でマッチングプールに入り、近い rating の相手と継続的に対戦する。
+- rating は勝敗・引き分けで更新され、勝ち方の点差は更新量に影響しない。新しい提出ほど
+  対戦頻度が高く、Leaderboard にはチーム内最高スコアの agent だけが表示される。
+- Simulation competition に Private Leaderboard はなく、episode replay と行動は公開・
+  ダウンロード可能になる場合がある。秘密の戦略を replay から隠せる前提を置かない。
+- episode 評価中は Submission / Environment の外から情報を取得したり、外へ送信したり
+  できない。対戦中の外部 API・LLM・ネットワーク呼び出しは禁止前提とする。
+- Competition Data は本コンペへの参加目的に限定し、非参加者への再配布は禁止。
+  コンペ終了後は速やかに削除する。外部データ・モデルは、全参加者が無償または合理的な
+  費用で利用でき、必要な権利を確保したものに限る。
+- 優勝 Submission は MIT を含む OSI 承認ライセンスでのソース提供と、再現可能な詳細説明を
+  求められる。提出 commit、deck hash、依存関係、実験条件を今から追跡する。
+
+Kaggle の FAQ は提出サイズ、HDD、RAM、vCPU を動的変数で表示しており、認証済み CLI の
+取得結果でも具体値へ展開されませんでした。これらの数値は推測せず、提出直前にブラウザの
+表示または実ジョブで再確認します。したがって Safety layer は固定上限ぎりぎりではなく、
+時間・メモリ・アーカイブ容量に余裕を持たせます。
+
 ## 推奨アーキテクチャ
 
 ### 1. Safety layer
@@ -171,7 +201,7 @@ score(a) = mean(V(a, world_k)) - λ * std(V(a, world_k))
 
 ## 次の具体的アクション
 
-1. 参加承諾済みアカウントで最新の実行時間、提出サイズ、外部データ、submission 頻度を確認する。
+1. ブラウザ表示または実ジョブで、CLIが展開しなかった提出サイズ・HDD・RAM・vCPUを確認する。
 2. Competition Data と公式サンプル agent を同じ環境へ固定する。
 3. seed 付き league runner と、勝率 CI・先後差・時間 p99 のレポートを作る。
 4. 最も安定したサンプルデッキに Safety layer と価値関数を実装する。
@@ -180,10 +210,13 @@ score(a) = mean(V(a, world_k)) - λ * std(V(a, world_k))
 ## 参照資料
 
 - [Kaggle competition](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle)
+- [Kaggle Rules](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle/rules)
 - [公式 cabt Engine Documentation](https://matsuoinstitute.github.io/cabt/)
 - [公式 API Reference](https://matsuoinstitute.github.io/cabt/api.html)
 - [株式会社ポケモン 開催発表](https://prtimes.jp/main/html/rd/p/000000872.000026665.html)
 
 ## 調査時点と制約
 
-調査日: 2026-07-22。Kaggle Rules の一部はログイン・参加承諾状態によって外部取得できないため、期限、実行時間、提出上限など変更され得る数値は断定していません。実装開始時に最新の Rules を再確認してください。
+初回調査日: 2026-07-22。認証済みRules再確認日: 2026-07-24。期限・提出上限・評価方式は
+参加承諾済みアカウントの Kaggle CLI で確認しました。Kaggle 側で変更され得るため、提出前にも
+再取得してください。提出サイズ・HDD・RAM・vCPU は CLI で動的変数が展開されず、未確認です。
