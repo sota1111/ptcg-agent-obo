@@ -1,5 +1,31 @@
 # Pokémon TCG AI Battle Challenge 攻略戦略
 
+このリポジトリは、攻略戦略だけでなく、戦略を検証する対戦・評価基盤、実験成果、
+対戦ログ再生、ブラウザ/ネイティブ iOS ビューアをまとめたプロジェクト成果物です。
+
+## セットアップと検証
+
+```bash
+npm install
+npm run lint
+npm run typecheck
+npm test
+```
+
+対戦ログのターミナルビューアは次のように起動できます。
+
+```bash
+npm run viewer -- src/__tests__/fixtures/battle-log.real-anonymized.json
+```
+
+主要ディレクトリ:
+
+- `src/` — 対戦、評価、分析、ログ再生とビューア
+- `artifacts/` — 再現可能な評価結果とレポート
+- `docs/` — 各機能の設計・運用手順
+- `config/` — 評価プロファイル
+- `ios/PTCGBattleViewer/` — ネイティブ iOS 盤面ビューア
+
 Kaggle の [PTCG AI Battle Challenge Simulation](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle) で、安定して勝率を高めるための設計・探索・検証戦略です。
 
 ## 結論
