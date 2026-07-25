@@ -1,23 +1,12 @@
 import Foundation
 
-struct AttackState: Codable, Equatable, Identifiable {
-    let name: String
-    let cost: [String]
-    let damage: String?
-    let text: String?
-
-    var id: String { "\(name)-\(cost.joined(separator: "-"))" }
-}
-
 struct CardState: Codable, Equatable, Identifiable {
     let id: String
     let name: String
     let maxHp: Int
     var damage: Int
     var energy: [String]
-    let cardType: String?
-    let rulesText: String?
-    let attacks: [AttackState]?
+    var attacks: [String]?
 }
 
 struct PlayerBoardState: Codable, Equatable {
@@ -25,7 +14,6 @@ struct PlayerBoardState: Codable, Equatable {
     var bench: [CardState]
     var deckCount: Int
     var handCount: Int
-    var hand: [CardState]?
     var discard: [String]
     var prizesRemaining: Int
 }
@@ -38,7 +26,7 @@ struct BoardState: Codable, Equatable {
 }
 
 enum BattleEvent: Decodable, Equatable {
-    case draw(player: String, count: Int, cards: [CardState]?)
+    case draw(player: String, count: Int)
     case playActive(player: String, card: CardState)
     case playBench(player: String, card: CardState)
     case attachEnergy(player: String, targetId: String, energy: String)
@@ -49,18 +37,14 @@ enum BattleEvent: Decodable, Equatable {
     case declareWinner(player: String)
 
     private enum CodingKeys: String, CodingKey {
-        case type, player, count, cards, card, targetId, energy, amount, nextPlayer
+        case type, player, count, card, targetId, energy, amount, nextPlayer
     }
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         switch try values.decode(String.self, forKey: .type) {
         case "draw":
-            self = try .draw(
-                player: values.decode(String.self, forKey: .player),
-                count: values.decode(Int.self, forKey: .count),
-                cards: values.decodeIfPresent([CardState].self, forKey: .cards)
-            )
+            self = try .draw(player: values.decode(String.self, forKey: .player), count: values.decode(Int.self, forKey: .count))
         case "play-active":
             self = try .playActive(player: values.decode(String.self, forKey: .player), card: values.decode(CardState.self, forKey: .card))
         case "play-bench":
@@ -84,7 +68,7 @@ enum BattleEvent: Decodable, Equatable {
 
     var description: String {
         switch self {
-        case let .draw(player, count, _): return "\(player) が山札から \(count) 枚引いた"
+        case let .draw(player, count): return "\(player) が山札から \(count) 枚引いた"
         case let .playActive(player, card): return "\(player) が \(card.name) をバトル場に出した"
         case let .playBench(player, card): return "\(player) が \(card.name) をベンチに出した"
         case let .attachEnergy(player, targetId, energy): return "\(player) が \(targetId) に \(energy) エネルギーを付けた"
@@ -155,23 +139,17 @@ enum BattleReplay {
             return value
         }
         switch event {
-        case let .draw(player, count, cards):
+        case let .draw(player, count):
             var value = try board(player)
             guard count > 0, value.deckCount >= count else { throw BattleReplayError.invalid("ドロー枚数が不正です") }
-            if let cards {
-                guard cards.count == count else { throw BattleReplayError.invalid("ドローしたカード情報の枚数が不正です") }
-                if value.hand != nil { value.hand?.append(contentsOf: cards) }
-            }
             value.deckCount -= count; value.handCount += count; state.players[player] = value
         case let .playActive(player, card):
             var value = try board(player)
             guard value.active == nil, value.handCount > 0 else { throw BattleReplayError.invalid("バトル場にカードを出せません") }
-            try removeFromHand(card.id, on: &value)
             value.active = card; value.handCount -= 1; state.players[player] = value
         case let .playBench(player, card):
             var value = try board(player)
             guard value.bench.count < 5, value.handCount > 0 else { throw BattleReplayError.invalid("ベンチにカードを出せません") }
-            try removeFromHand(card.id, on: &value)
             value.bench.append(card); value.handCount -= 1; state.players[player] = value
         case let .attachEnergy(player, targetId, energy):
             var value = try board(player)
@@ -207,13 +185,5 @@ enum BattleReplay {
         if board.active?.id == id { change(&board.active!); return }
         if let index = board.bench.firstIndex(where: { $0.id == id }) { change(&board.bench[index]); return }
         throw BattleReplayError.invalid("場に存在しないカード \(id)")
-    }
-
-    private static func removeFromHand(_ id: String, on board: inout PlayerBoardState) throws {
-        guard board.hand != nil else { return }
-        guard let index = board.hand?.firstIndex(where: { $0.id == id }) else {
-            throw BattleReplayError.invalid("手札に存在しないカード \(id)")
-        }
-        board.hand?.remove(at: index)
     }
 }
