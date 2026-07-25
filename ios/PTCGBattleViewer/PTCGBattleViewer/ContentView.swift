@@ -69,17 +69,88 @@ private struct PlayerBoardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack { Text(name).font(.title2.bold()); if isCurrent { Text("現在").font(.caption).padding(5).background(.blue, in: Capsule()).foregroundStyle(.white) } }
             HStack { count("手札", board.handCount); count("山札", board.deckCount); count("サイド", board.prizesRemaining); count("トラッシュ", board.discard.count) }
+            Text("手札").font(.headline)
+            if let hand = board.hand {
+                if hand.isEmpty { Text("カードなし").foregroundStyle(.secondary) }
+                else {
+                    ScrollView(.horizontal) {
+                        HStack { ForEach(hand) { DetailCardButton(card: $0) } }
+                    }
+                }
+            } else {
+                Text("このログには手札のカード情報がありません（\(board.handCount)枚）")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Text("バトル場").font(.headline)
-            CardView(card: board.active)
+            if let active = board.active { DetailCardButton(card: active) }
+            else { CardView(card: nil) }
             Text("ベンチ").font(.headline)
             if board.bench.isEmpty { Text("ポケモンなし").foregroundStyle(.secondary) }
-            else { ScrollView(.horizontal) { HStack { ForEach(board.bench) { CardView(card: $0) } } } }
+            else { ScrollView(.horizontal) { HStack { ForEach(board.bench) { DetailCardButton(card: $0) } } } }
             DisclosureGroup("トラッシュの内容") { Text(board.discard.isEmpty ? "なし" : board.discard.joined(separator: ", ")).frame(maxWidth: .infinity, alignment: .leading) }
         }.padding().background(.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func count(_ label: String, _ value: Int) -> some View {
         VStack { Text("\(value)").font(.headline); Text(label).font(.caption2) }.frame(maxWidth: .infinity)
+    }
+}
+
+private struct DetailCardButton: View {
+    let card: CardState
+    @State private var showingDetails = false
+
+    var body: some View {
+        Button { showingDetails = true } label: {
+            CardView(card: card)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(card.name) の詳細を表示")
+        .sheet(isPresented: $showingDetails) {
+            NavigationStack {
+                CardDetailView(card: card)
+                    .navigationTitle(card.name)
+                    .toolbar {
+                        Button("閉じる") { showingDetails = false }
+                    }
+            }
+        }
+    }
+}
+
+private struct CardDetailView: View {
+    let card: CardState
+
+    var body: some View {
+        List {
+            Section("カード") {
+                LabeledContent("名前", value: card.name)
+                if let cardType = card.cardType { LabeledContent("種類", value: cardType) }
+                LabeledContent("HP", value: "\(card.maxHp)")
+                if let rulesText = card.rulesText { Text(rulesText) }
+            }
+            Section("技") {
+                if let attacks = card.attacks, !attacks.isEmpty {
+                    ForEach(attacks) { attack in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(attack.name).font(.headline)
+                                Spacer()
+                                if let damage = attack.damage { Text(damage).font(.headline) }
+                            }
+                            LabeledContent(
+                                "必要エネルギー",
+                                value: attack.cost.isEmpty ? "なし" : attack.cost.joined(separator: "・")
+                            )
+                            if let text = attack.text { Text(text).font(.subheadline).foregroundStyle(.secondary) }
+                        }
+                    }
+                } else {
+                    Text("技情報なし").foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 }
 
@@ -92,6 +163,7 @@ private struct CardView: View {
                 Text("HP \(max(0, card.maxHp - card.damage))/\(card.maxHp)")
                 Text("ダメージ \(card.damage)")
                 Text("エネルギー \(card.energy.isEmpty ? "なし" : card.energy.joined(separator: ", "))")
+                Text("タップして詳細").font(.caption2).foregroundStyle(.secondary)
             }
         }.padding().frame(minWidth: 150, alignment: .leading).background(.background, in: RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(.secondary))
     }

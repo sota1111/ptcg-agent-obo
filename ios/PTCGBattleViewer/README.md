@@ -10,6 +10,14 @@ SwiftUIアプリです。iOS 17以降に対応します。
 3. 実機の場合は Target → Signing & Capabilities で自分のTeamと一意なBundle Identifierを設定します。
 4. Run（⌘R）し、右上の「ログを開く」から `ptcg-battle-log/v1` JSONを選択します。
 5. 先頭・前・次・末尾ボタンまたはスライダーで時点を移動します。
+6. 手札・バトル場・ベンチのカードをタップすると、カード種別、説明、技、ダメージ、
+   技に必要なエネルギーを確認できます。
+
+手札のカード名と詳細を表示するには、各プレイヤーの盤面に `hand`（`CardState` の配列）を、
+ドローイベントに `cards`（ドローした `CardState` の配列）を含めます。従来どおり
+`handCount` のみのログも読み込めますが、その場合は非公開の手札として枚数だけを表示します。
+カード詳細では任意フィールド `cardType`、`rulesText`、`attacks` を利用し、各技は `name`、
+エネルギー種別の `cost` 配列、任意の `damage` と `text` を持ちます。
 
 動作確認用ログにはリポジトリの
 `src/__tests__/fixtures/battle-log.valid.json` を利用できます。AirDrop、iCloud Drive、または
