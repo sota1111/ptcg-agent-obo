@@ -23,6 +23,7 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("対戦タイムライン")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("ログを開く", systemImage: "folder") { importing = true } }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
                 do {

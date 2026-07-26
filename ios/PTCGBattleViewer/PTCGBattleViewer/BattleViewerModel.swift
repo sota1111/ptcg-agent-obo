@@ -7,7 +7,7 @@ enum CompactLayoutMetrics {
     static let sectionSpacing: CGFloat = 4
     static let timelineHeight: CGFloat = 124
     static let playerBoardHeight: CGFloat = 250
-    static let iPhone14MinimumContentHeight: CGFloat = 640
+    static let iPhone14InlineNavigationContentHeight: CGFloat = 700
     static let totalContentHeight =
         verticalPadding * 2 + timelineHeight + sectionSpacing + playerBoardHeight * 2
 }
