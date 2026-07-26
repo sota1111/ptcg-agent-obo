@@ -55,6 +55,17 @@ final class BattleReplayTests: XCTestCase {
         XCTAssertEqual(attack?.displayText, "サンダーボルト 200（必要エネルギー 雷・雷・無）")
     }
 
+    func testPreservesNamedHandCardsDuringReplay() throws {
+        let data = """
+        {"schemaVersion":"ptcg-battle-log/v1","battleId":"hand-details","initialState":{"turn":1,"currentPlayer":"あなた","players":{"あなた":{"active":null,"bench":[],"deckCount":2,"handCount":1,"hand":[{"id":"pikachu","name":"ピカチュウex","maxHp":200,"damage":0,"energy":[],"cardType":"雷","rulesText":"たねポケモン","attacks":[{"name":"サンダーボルト","damage":"200","cost":["雷","雷","無"]}]}],"discard":[],"prizesRemaining":6},"対戦相手":{"active":null,"bench":[],"deckCount":2,"handCount":1,"discard":[],"prizesRemaining":6}},"winner":null},"events":[{"type":"draw","player":"あなた","count":1,"cards":[{"id":"energy","name":"基本雷エネルギー","maxHp":0,"damage":0,"energy":[]}]},{"type":"play-active","player":"あなた","card":{"id":"pikachu","name":"ピカチュウex","maxHp":200,"damage":0,"energy":[],"attacks":[{"name":"サンダーボルト","damage":"200","cost":["雷","雷","無"]}]}}]}
+        """.data(using: .utf8)!
+
+        let (_, snapshots) = try BattleReplay.decode(data)
+        XCTAssertEqual(snapshots[1].state.players["あなた"]?.hand?.map(\.name), ["ピカチュウex", "基本雷エネルギー"])
+        XCTAssertEqual(snapshots[2].state.players["あなた"]?.hand?.map(\.name), ["基本雷エネルギー"])
+        XCTAssertEqual(snapshots[2].state.players["あなた"]?.active?.attacks?.first?.cost, ["雷", "雷", "無"])
+    }
+
     @MainActor
     func testNavigationIsBoundedAndSupportsArbitraryPosition() {
         let model = BattleViewerModel()
