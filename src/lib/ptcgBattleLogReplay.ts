@@ -1,11 +1,18 @@
 export const BATTLE_LOG_SCHEMA_VERSION = 'ptcg-battle-log/v1' as const;
 
+export interface AttackState {
+  name: string;
+  damage?: string;
+  cost: string[];
+}
+
 export interface CardState {
   id: string;
   name: string;
   maxHp: number;
   damage: number;
   energy: string[];
+  attacks?: Array<string | AttackState>;
 }
 
 export interface PlayerBoardState {
@@ -96,6 +103,27 @@ function validateCard(
   assertNonNegativeInteger(card.damage, `${field}.damage`, eventIndex);
   if (!Array.isArray(card.energy) || !card.energy.every((energy) => typeof energy === 'string')) {
     throw new BattleLogReplayError(`${field}.energy must be a string array`, eventIndex);
+  }
+  if (card.attacks !== undefined) {
+    if (!Array.isArray(card.attacks)) {
+      throw new BattleLogReplayError(`${field}.attacks must be an array`, eventIndex);
+    }
+    for (const attack of card.attacks) {
+      if (typeof attack === 'string') continue;
+      if (
+        !isRecord(attack) ||
+        typeof attack.name !== 'string' ||
+        attack.name.length === 0 ||
+        (attack.damage !== undefined && typeof attack.damage !== 'string') ||
+        !Array.isArray(attack.cost) ||
+        !attack.cost.every((energy) => typeof energy === 'string' && energy.length > 0)
+      ) {
+        throw new BattleLogReplayError(
+          `${field}.attacks entries must be strings or { name, damage?, cost[] }`,
+          eventIndex
+        );
+      }
+    }
   }
 }
 

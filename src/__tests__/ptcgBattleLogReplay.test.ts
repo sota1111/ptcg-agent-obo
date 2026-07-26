@@ -57,4 +57,12 @@ describe('replayBattleLog', () => {
     expect(snapshots[3].state.players.take.active?.damage).toBe(0);
     expect(snapshots[4].state.players.take.active?.damage).toBe(90);
   });
+
+  it('preserves optional attacks in concrete-card snapshot logs', () => {
+    const snapshots = replayBattleLog(load('battle-log.snapshot.json'));
+    expect(snapshots[0].state.players['あなた'].active?.attacks).toEqual([
+      { name: 'エレキサークル', damage: '60', cost: ['雷'] },
+      { name: 'サンダーボルト', damage: '200', cost: ['雷', '雷', '無'] },
+    ]);
+  });
 });

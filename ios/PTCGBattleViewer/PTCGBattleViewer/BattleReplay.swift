@@ -1,12 +1,40 @@
 import Foundation
 
-struct AttackState: Codable, Equatable, Identifiable {
+struct AttackState: Codable, Equatable {
     let name: String
-    let cost: [String]
     let damage: String?
-    let text: String?
+    let cost: [String]
 
-    var id: String { "\(name)-\(cost.joined(separator: "-"))" }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let legacyName = try? container.decode(String.self) {
+            name = legacyName
+            damage = nil
+            cost = []
+            return
+        }
+        let value = try container.decode(StructuredAttack.self)
+        name = value.name
+        damage = value.damage
+        cost = value.cost
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(StructuredAttack(name: name, damage: damage, cost: cost))
+    }
+
+    var displayText: String {
+        let damageText = damage.map { " \($0)" } ?? ""
+        let costText = cost.isEmpty ? "なし" : cost.joined(separator: "・")
+        return "\(name)\(damageText)（必要エネルギー \(costText)）"
+    }
+
+    private struct StructuredAttack: Codable {
+        let name: String
+        let damage: String?
+        let cost: [String]
+    }
 }
 
 struct CardState: Codable, Equatable, Identifiable {
@@ -17,7 +45,7 @@ struct CardState: Codable, Equatable, Identifiable {
     var energy: [String]
     let cardType: String?
     let rulesText: String?
-    let attacks: [AttackState]?
+    var attacks: [AttackState]?
 }
 
 struct PlayerBoardState: Codable, Equatable {
@@ -107,6 +135,18 @@ struct BattleLog: Decodable {
 struct ReplaySnapshot: Equatable {
     let event: BattleEvent?
     let state: BoardState
+}
+
+struct BoardSeatLayout: Equatable {
+    let opponent: String
+    let viewer: String
+
+    init?(players: some Sequence<String>) {
+        let names = Array(Set(players)).sorted()
+        guard names.count >= 2 else { return nil }
+        opponent = names[1]
+        viewer = names[0]
+    }
 }
 
 enum BattleReplayError: LocalizedError {
