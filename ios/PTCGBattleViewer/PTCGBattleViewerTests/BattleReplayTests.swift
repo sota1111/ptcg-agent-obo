@@ -5,9 +5,13 @@ final class BattleReplayTests: XCTestCase {
     func testCompactLayoutFitsIPhone14ContentHeightWithoutVerticalScrolling() {
         XCTAssertLessThanOrEqual(
             CompactLayoutMetrics.totalContentHeight,
-            CompactLayoutMetrics.iPhone14MinimumContentHeight
+            CompactLayoutMetrics.iPhone14InlineNavigationContentHeight
         )
         XCTAssertEqual(CompactLayoutMetrics.totalContentHeight, 636)
+        XCTAssertGreaterThanOrEqual(
+            CompactLayoutMetrics.iPhone14InlineNavigationContentHeight - CompactLayoutMetrics.totalContentHeight,
+            64
+        )
     }
 
     private let log = """
