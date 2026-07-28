@@ -6,7 +6,21 @@ struct ContentView: View {
     @State private var importing = false
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Text("対戦タイムライン")
+                    .font(.headline)
+                Spacer()
+                Button("ログを開く", systemImage: "folder") {
+                    importing = true
+                }
+                .labelStyle(.iconOnly)
+                .accessibilityLabel("ログを開く")
+            }
+            .padding(.horizontal, CompactLayoutMetrics.horizontalPadding)
+            .frame(height: CompactLayoutMetrics.headerHeight)
+            .accessibilityIdentifier("viewer-header")
+
             Group {
                 if let snapshot = model.current {
                     GeometryReader { proxy in
@@ -22,20 +36,19 @@ struct ContentView: View {
                     ContentUnavailableView("対戦ログを選択", systemImage: "doc.badge.plus", description: Text("ptcg-battle-log/v1 のJSONファイルを読み込みます"))
                 }
             }
-            .navigationTitle("対戦タイムライン")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { Button("ログを開く", systemImage: "folder") { importing = true } }
-            .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
-                do {
-                    let url = try result.get()
-                    guard url.startAccessingSecurityScopedResource() else { throw CocoaError(.fileReadNoPermission) }
-                    defer { url.stopAccessingSecurityScopedResource() }
-                    model.load(try Data(contentsOf: url))
-                } catch { model.showError(error) }
-            }
-            .alert("読み込みエラー", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(model.errorMessage ?? "") }
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+            do {
+                let url = try result.get()
+                guard url.startAccessingSecurityScopedResource() else { throw CocoaError(.fileReadNoPermission) }
+                defer { url.stopAccessingSecurityScopedResource() }
+                model.load(try Data(contentsOf: url))
+            } catch { model.showError(error) }
+        }
+        .alert("読み込みエラー", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.errorMessage ?? "")
         }
     }
 
