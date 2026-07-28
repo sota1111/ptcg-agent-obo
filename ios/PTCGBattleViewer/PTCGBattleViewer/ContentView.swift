@@ -108,7 +108,7 @@ struct BattleArenaView: View {
                         isOpponent: false
                     )
                 }
-                .frame(height: CompactLayoutMetrics.playerBoardHeight * 2)
+                .frame(height: CompactLayoutMetrics.opponentBoardHeight + CompactLayoutMetrics.viewerBoardHeight)
                 .background(
                     LinearGradient(
                         colors: [.indigo.opacity(0.2), .cyan.opacity(0.12), .blue.opacity(0.24)],
@@ -157,6 +157,10 @@ struct PlayerBoardView: View {
                 pile("トラッシュ", value: board.discard.count, icon: "trash.fill")
             }
 
+            if !isOpponent {
+                HandStrip(cards: board.hand, count: board.handCount)
+            }
+
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text("ベンチ").font(.caption2.bold()).foregroundStyle(.secondary)
@@ -180,7 +184,7 @@ struct PlayerBoardView: View {
             }
         }
         .padding(7)
-        .frame(height: CompactLayoutMetrics.playerBoardHeight)
+        .frame(height: isOpponent ? CompactLayoutMetrics.opponentBoardHeight : CompactLayoutMetrics.viewerBoardHeight)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(role) \(name) の盤面")
     }
@@ -200,6 +204,41 @@ struct PlayerBoardView: View {
         }
         .frame(width: 42, height: 72)
         .background(.background.opacity(0.82), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct HandStrip: View {
+    let cards: [CardState]?
+    let count: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("あなたの手札 \(count)枚")
+                .font(.caption2.bold())
+                .foregroundStyle(.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    if let cards, !cards.isEmpty {
+                        ForEach(cards) { card in
+                            Label(card.name, systemImage: "rectangle.portrait.fill")
+                                .font(.system(size: 9, weight: .semibold))
+                                .lineLimit(1)
+                                .padding(.horizontal, 6)
+                                .frame(height: 30)
+                                .background(.background.opacity(0.94), in: RoundedRectangle(cornerRadius: 6))
+                        }
+                    } else {
+                        CardBackFan(count: count, isOpponent: false)
+                        Text("カード情報なし")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .frame(height: 32)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("viewer-hand")
     }
 }
 

@@ -7,10 +7,14 @@ final class BattleReplayTests: XCTestCase {
             CompactLayoutMetrics.totalContentHeight,
             CompactLayoutMetrics.iPhone14InlineNavigationContentHeight
         )
-        XCTAssertEqual(CompactLayoutMetrics.totalContentHeight, 636)
+        XCTAssertEqual(CompactLayoutMetrics.totalContentHeight, 620)
         XCTAssertGreaterThanOrEqual(
             CompactLayoutMetrics.iPhone14InlineNavigationContentHeight - CompactLayoutMetrics.totalContentHeight,
             64
+        )
+        XCTAssertGreaterThan(
+            CompactLayoutMetrics.viewerBoardHeight,
+            CompactLayoutMetrics.opponentBoardHeight
         )
     }
 
