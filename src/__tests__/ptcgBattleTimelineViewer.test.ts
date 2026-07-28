@@ -44,6 +44,53 @@ describe('battle timeline viewer', () => {
     expect(page).toContain('サンダーボルト 200（必要エネルギー 雷・雷・無）');
   });
 
+  test('shows only the viewer hand, five bench names, and safe name fallbacks', () => {
+    const log = structuredClone(fixture);
+    const players = Object.keys(log.initialState.players).sort();
+    log.initialState.players[players[0]].handCount = 2;
+    log.initialState.players[players[0]].hand = [
+      { id: 'h1', name: 'ネストボール', maxHp: 0, damage: 0, energy: [] },
+      { id: 'h2', name: '基本雷エネルギー', maxHp: 0, damage: 0, energy: [] },
+    ];
+    log.initialState.players[players[1]].handCount = 1;
+    log.initialState.players[players[1]].hand = [
+      { id: 'secret', name: '秘密のカード', maxHp: 0, damage: 0, energy: [] },
+    ];
+    log.initialState.players[players[0]].bench = Array.from({ length: 5 }, (_, index) => ({
+      id: `b${index}`,
+      name: index === 4 ? '' : `ベンチ${index + 1}`,
+      maxHp: 100,
+      damage: 0,
+      energy: [],
+    }));
+    log.events = [];
+
+    const page = renderBattleTimelinePage(log);
+    expect(page).toContain('ネストボール');
+    expect(page).not.toContain('秘密のカード');
+    expect(page).toContain('非公開 1枚');
+    expect(page).toContain('ベンチ4');
+    expect(page).toContain('カード名不明');
+  });
+
+  test('renders trainer event name, effect, and missing-description fallback', () => {
+    const described = structuredClone(fixture);
+    described.events = [{
+      type: 'play-trainer',
+      player: 'matsu',
+      cardName: '博士の研究',
+      effect: '手札をすべてトラッシュし、山札を7枚引く',
+    }];
+    expect(renderBattleTimelinePage(described)).toContain(
+      'matsu が 博士の研究 を使用：手札をすべてトラッシュし、山札を7枚引く'
+    );
+
+    described.events = [{ type: 'play-trainer', player: 'take', cardName: '', effect: '' }];
+    expect(renderBattleTimelinePage(described)).toContain(
+      'take が トレーナーズ（名前不明） を使用：説明なし'
+    );
+  });
+
   test('provides bounded first, previous, next, last, and arbitrary navigation', () => {
     const page = renderBattleTimelinePage(fixture);
     expect(page).toContain('id="first"');

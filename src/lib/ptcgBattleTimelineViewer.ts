@@ -32,6 +32,11 @@ function describeEvent(event: BattleLogEvent | null): string {
       return `${event.player} の ${event.targetId} がきぜつ`;
     case 'take-prize':
       return `${event.player} がサイドを ${event.count} 枚取った`;
+    case 'play-trainer': {
+      const name = event.cardName.trim() || 'トレーナーズ（名前不明）';
+      const effect = event.effect?.trim() || '説明なし';
+      return `${event.player} が ${name} を使用：${effect}`;
+    }
     case 'end-turn':
       return `ターン終了。次は ${event.nextPlayer}`;
     case 'declare-winner':
@@ -42,8 +47,9 @@ function describeEvent(event: BattleLogEvent | null): string {
 function cardMarkup(card: CardState | null, emptyLabel: string): string {
   if (!card) return `<div class="card empty">${escapeHtml(emptyLabel)}</div>`;
   const hp = Math.max(0, card.maxHp - card.damage);
+  const name = card.name.trim() || 'カード名不明';
   return `<div class="card">
-    <strong>${escapeHtml(card.name)}</strong>
+    <strong>${escapeHtml(name)}</strong>
     <span>HP ${hp}/${card.maxHp}</span>
     <span>ダメージ ${card.damage}</span>
     <span>エネルギー ${card.energy.length ? card.energy.map(escapeHtml).join(', ') : 'なし'}</span>
@@ -62,7 +68,7 @@ function cardMarkup(card: CardState | null, emptyLabel: string): string {
   </div>`;
 }
 
-function playerMarkup(player: string, state: BoardState): string {
+function playerMarkup(player: string, state: BoardState, revealHand: boolean): string {
   const board = state.players[player];
   return `<section class="player-board">
     <h2>${escapeHtml(player)}${state.currentPlayer === player ? ' <small>現在のプレイヤー</small>' : ''}</h2>
@@ -76,6 +82,8 @@ function playerMarkup(player: string, state: BoardState): string {
     ${cardMarkup(board.active, 'ポケモンなし')}
     <h3>ベンチ</h3>
     <div class="bench">${board.bench.length ? board.bench.map((card) => cardMarkup(card, '')).join('') : '<span class="muted">ポケモンなし</span>'}</div>
+    <h3>手札</h3>
+    <div class="hand">${revealHand && board.hand ? board.hand.map((card) => `<span class="hand-card">${escapeHtml(card.name.trim() || 'カード名不明')}</span>`).join('') || '<span class="muted">なし</span>' : `<span class="card-back">非公開 ${board.handCount}枚</span>`}</div>
     <details><summary>トラッシュの内容</summary><p>${board.discard.length ? board.discard.map(escapeHtml).join(', ') : 'なし'}</p></details>
   </section>`;
 }
@@ -89,7 +97,8 @@ export function renderSnapshot(snapshot: ReplaySnapshot, position: number, total
   </div>
   <p class="event">${escapeHtml(describeEvent(snapshot.event))}</p>
   <div class="boards">${Object.keys(state.players)
-    .map((player) => playerMarkup(player, state))
+    .sort()
+    .map((player, index) => playerMarkup(player, state, index === 0))
     .join('')}</div>`;
 }
 
@@ -138,6 +147,8 @@ export function renderBattleTimelinePage(input: unknown): string {
     .card { display:grid; gap:4px; border:1px solid #64748b; border-radius:10px; padding:12px; background:#263449; min-width:150px; }
     .card.empty { color:#94a3b8; border-style:dashed; }
     .bench { display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; }
+    .hand { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; }
+    .hand-card,.card-back { border:1px solid #64748b; border-radius:7px; padding:6px 8px; background:#263449; white-space:nowrap; }
     .muted { color:#94a3b8; } .winner { background:#14532d !important; }
     @media (max-width:600px) {
       body {

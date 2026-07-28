@@ -233,7 +233,7 @@ private struct HandStrip: View {
                 HStack(spacing: 4) {
                     if let cards, !cards.isEmpty {
                         ForEach(cards) { card in
-                            Label(card.name, systemImage: "rectangle.portrait.fill")
+                            Label(card.displayName, systemImage: "rectangle.portrait.fill")
                                 .font(.system(size: 9, weight: .semibold))
                                 .lineLimit(1)
                                 .padding(.horizontal, 6)
@@ -266,7 +266,7 @@ private struct CardView: View {
             if let zone { Text(zone).font(.caption2.bold()).foregroundStyle(.secondary) }
             HStack {
                 Image(systemName: card == nil ? "plus" : "bolt.shield.fill")
-                Text(card?.name ?? "ポケモンなし").font(.caption.bold()).lineLimit(1)
+                Text(card?.displayName ?? "ポケモンなし").font(.caption.bold()).lineLimit(1)
             }
             if let card {
                 ProgressView(value: Double(card.remainingHp), total: Double(max(1, card.maxHp)))
@@ -344,7 +344,7 @@ private struct CardDetailSheet: View {
                     }
                 }
             }
-            .navigationTitle(card.name)
+            .navigationTitle(card.displayName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("閉じる") { dismiss() } }
         }

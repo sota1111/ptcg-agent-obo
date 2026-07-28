@@ -49,6 +49,9 @@ struct CardState: Codable, Equatable, Identifiable {
     var retreatCost: [String]?
 
     var remainingHp: Int { max(0, maxHp - damage) }
+    var displayName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "カード名不明" : name
+    }
     var retreatCostText: String {
         guard let retreatCost, !retreatCost.isEmpty else { return "なし" }
         return retreatCost.joined(separator: "・")
@@ -80,11 +83,12 @@ enum BattleEvent: Decodable, Equatable {
     case damage(player: String, targetId: String, amount: Int)
     case knockout(player: String, targetId: String)
     case takePrize(player: String, count: Int)
+    case playTrainer(player: String, cardName: String, effect: String?)
     case endTurn(nextPlayer: String)
     case declareWinner(player: String)
 
     private enum CodingKeys: String, CodingKey {
-        case type, player, count, cards, card, targetId, energy, amount, nextPlayer
+        case type, player, count, cards, card, targetId, energy, amount, nextPlayer, cardName, effect
     }
 
     init(from decoder: Decoder) throws {
@@ -108,6 +112,12 @@ enum BattleEvent: Decodable, Equatable {
             self = try .knockout(player: values.decode(String.self, forKey: .player), targetId: values.decode(String.self, forKey: .targetId))
         case "take-prize":
             self = try .takePrize(player: values.decode(String.self, forKey: .player), count: values.decode(Int.self, forKey: .count))
+        case "play-trainer":
+            self = try .playTrainer(
+                player: values.decode(String.self, forKey: .player),
+                cardName: values.decode(String.self, forKey: .cardName),
+                effect: values.decodeIfPresent(String.self, forKey: .effect)
+            )
         case "end-turn":
             self = try .endTurn(nextPlayer: values.decode(String.self, forKey: .nextPlayer))
         case "declare-winner":
@@ -120,12 +130,17 @@ enum BattleEvent: Decodable, Equatable {
     var description: String {
         switch self {
         case let .draw(player, count, _): return "\(player) が山札から \(count) 枚引いた"
-        case let .playActive(player, card): return "\(player) が \(card.name) をバトル場に出した"
-        case let .playBench(player, card): return "\(player) が \(card.name) をベンチに出した"
+        case let .playActive(player, card): return "\(player) が \(card.displayName) をバトル場に出した"
+        case let .playBench(player, card): return "\(player) が \(card.displayName) をベンチに出した"
         case let .attachEnergy(player, targetId, energy): return "\(player) が \(targetId) に \(energy) エネルギーを付けた"
         case let .damage(player, targetId, amount): return "\(player) の \(targetId) に \(amount) ダメージ"
         case let .knockout(player, targetId): return "\(player) の \(targetId) がきぜつ"
         case let .takePrize(player, count): return "\(player) がサイドを \(count) 枚取った"
+        case let .playTrainer(player, cardName, effect):
+            let safeName = cardName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "トレーナーズ（名前不明）" : cardName
+            let safeEffect = effect?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let effectText = safeEffect.flatMap { $0.isEmpty ? nil : $0 } ?? "説明なし"
+            return "\(player) が \(safeName) を使用：\(effectText)"
         case let .endTurn(nextPlayer): return "ターン終了。次は \(nextPlayer)"
         case let .declareWinner(player): return "\(player) の勝利"
         }
@@ -229,6 +244,8 @@ enum BattleReplay {
             var value = try board(player)
             guard count > 0, value.prizesRemaining >= count else { throw BattleReplayError.invalid("サイド枚数が不正です") }
             value.prizesRemaining -= count; value.handCount += count; state.players[player] = value
+        case let .playTrainer(player, _, _):
+            _ = try board(player)
         case let .endTurn(nextPlayer):
             _ = try board(nextPlayer); state.turn += 1; state.currentPlayer = nextPlayer
         case let .declareWinner(player):
