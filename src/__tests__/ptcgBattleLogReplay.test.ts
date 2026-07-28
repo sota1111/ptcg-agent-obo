@@ -80,4 +80,75 @@ describe('replayBattleLog', () => {
       { name: 'サンダーボルト', damage: '200', cost: ['雷', '雷', '無'] },
     ]);
   });
+
+  it('keeps known hand cards synchronized without revealing unknown hands', () => {
+    const log = load('battle-log.valid.json') as any;
+    log.initialState.players.matsu.handCount = 1;
+    log.initialState.players.matsu.hand = [
+      { id: 'm1', name: 'Matsu EX', maxHp: 100, damage: 0, energy: [] },
+    ];
+    log.events = [
+      log.events[0],
+      {
+        type: 'draw',
+        player: 'matsu',
+        count: 1,
+        cards: [{ id: 'm2', name: '博士の研究', maxHp: 0, damage: 0, energy: [] }],
+      },
+    ];
+
+    const snapshots = replayBattleLog(log);
+    expect(snapshots[1].state.players.matsu.hand).toEqual([]);
+    expect(snapshots[2].state.players.matsu.hand?.map((card) => card.name)).toEqual(['博士の研究']);
+    expect(snapshots[2].state.players.take.hand).toBeUndefined();
+  });
+
+  it('keeps both players on the same turn snapshot at every turn boundary', () => {
+    const log = load('battle-log.valid.json') as any;
+    log.events = [
+      { type: 'end-turn', nextPlayer: 'take' },
+      { type: 'end-turn', nextPlayer: 'matsu' },
+    ];
+
+    const snapshots = replayBattleLog(log);
+    expect(snapshots.map(({ state }) => [state.turn, state.currentPlayer])).toEqual([
+      [1, 'matsu'],
+      [2, 'take'],
+      [3, 'matsu'],
+    ]);
+    expect(Object.keys(snapshots[1].state.players)).toEqual(['matsu', 'take']);
+  });
+
+  it('supports up to five named bench cards and safe missing names', () => {
+    const log = load('battle-log.valid.json') as any;
+    log.initialState.players.matsu.bench = Array.from({ length: 5 }, (_, index) => ({
+      id: `bench-${index}`,
+      name: index === 4 ? '' : `ポケモン${index + 1}`,
+      maxHp: 100,
+      damage: 0,
+      energy: [],
+    }));
+    log.events = [];
+
+    const snapshot = replayBattleLog(log)[0];
+    expect(snapshot.state.players.matsu.bench).toHaveLength(5);
+    expect(snapshot.state.players.matsu.bench[4].name).toBe('');
+  });
+
+  it('preserves trainer usage descriptions and permits a safe fallback', () => {
+    const log = load('battle-log.valid.json') as any;
+    log.events = [
+      {
+        type: 'play-trainer',
+        player: 'matsu',
+        cardName: '博士の研究',
+        effect: '手札をすべてトラッシュし、山札を7枚引く',
+      },
+      { type: 'play-trainer', player: 'take', cardName: '', effect: '' },
+    ];
+
+    const snapshots = replayBattleLog(log);
+    expect(snapshots[1].event).toMatchObject({ cardName: '博士の研究' });
+    expect(snapshots[2].state.turn).toBe(1);
+  });
 });

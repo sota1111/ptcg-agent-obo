@@ -14,6 +14,8 @@ export interface CardState {
   energy: string[];
   attacks?: Array<string | AttackState>;
   retreatCost?: string[];
+  cardType?: string;
+  rulesText?: string;
 }
 
 export interface PlayerBoardState {
@@ -21,6 +23,7 @@ export interface PlayerBoardState {
   bench: CardState[];
   deckCount: number;
   handCount: number;
+  hand?: CardState[];
   discard: string[];
   prizesRemaining: number;
 }
@@ -33,13 +36,14 @@ export interface BoardState {
 }
 
 export type BattleLogEvent =
-  | { type: 'draw'; player: string; count: number }
+  | { type: 'draw'; player: string; count: number; cards?: CardState[] }
   | { type: 'play-active'; player: string; card: CardState }
   | { type: 'play-bench'; player: string; card: CardState }
   | { type: 'attach-energy'; player: string; targetId: string; energy: string }
   | { type: 'damage'; player: string; targetId: string; amount: number }
   | { type: 'knockout'; player: string; targetId: string }
   | { type: 'take-prize'; player: string; count: number }
+  | { type: 'play-trainer'; player: string; cardName: string; effect?: string }
   | { type: 'end-turn'; nextPlayer: string }
   | { type: 'declare-winner'; player: string };
 
@@ -93,14 +97,11 @@ function validateCard(
     !isRecord(card) ||
     typeof card.id !== 'string' ||
     card.id.length === 0 ||
-    typeof card.name !== 'string' ||
-    card.name.length === 0
+    typeof card.name !== 'string'
   ) {
-    throw new BattleLogReplayError(`${field} must contain non-empty id and name`, eventIndex);
+    throw new BattleLogReplayError(`${field} must contain a non-empty id and string name`, eventIndex);
   }
   assertNonNegativeInteger(card.maxHp, `${field}.maxHp`, eventIndex);
-  if (card.maxHp === 0)
-    throw new BattleLogReplayError(`${field}.maxHp must be greater than zero`, eventIndex);
   assertNonNegativeInteger(card.damage, `${field}.damage`, eventIndex);
   if (!Array.isArray(card.energy) || !card.energy.every((energy) => typeof energy === 'string')) {
     throw new BattleLogReplayError(`${field}.energy must be a string array`, eventIndex);
@@ -135,6 +136,13 @@ function validateCard(
   }
 }
 
+function validatePokemonCard(card: unknown, field: string, eventIndex: number | null): void {
+  validateCard(card, field, eventIndex);
+  if ((card as CardState).maxHp === 0) {
+    throw new BattleLogReplayError(`${field}.maxHp must be greater than zero`, eventIndex);
+  }
+}
+
 function validateInitialState(value: unknown): asserts value is BoardState {
   if (!isRecord(value)) throw new BattleLogReplayError('initialState must be an object');
   assertNonNegativeInteger(value.turn, 'initialState.turn', null);
@@ -148,7 +156,7 @@ function validateInitialState(value: unknown): asserts value is BoardState {
     if (!isRecord(rawBoard))
       throw new BattleLogReplayError(`initialState.players.${player} must be an object`);
     if (rawBoard.active !== null)
-      validateCard(rawBoard.active, `initialState.players.${player}.active`, null);
+      validatePokemonCard(rawBoard.active, `initialState.players.${player}.active`, null);
     if (!Array.isArray(rawBoard.bench)) {
       throw new BattleLogReplayError(`initialState.players.${player}.bench must be an array`);
     }
@@ -158,10 +166,21 @@ function validateInitialState(value: unknown): asserts value is BoardState {
       );
     }
     rawBoard.bench.forEach((card, index) =>
-      validateCard(card, `initialState.players.${player}.bench[${index}]`, null)
+      validatePokemonCard(card, `initialState.players.${player}.bench[${index}]`, null)
     );
     assertNonNegativeInteger(rawBoard.deckCount, `initialState.players.${player}.deckCount`, null);
     assertNonNegativeInteger(rawBoard.handCount, `initialState.players.${player}.handCount`, null);
+    if (rawBoard.hand !== undefined) {
+      if (!Array.isArray(rawBoard.hand) || rawBoard.hand.length !== rawBoard.handCount) {
+        throw new BattleLogReplayError(
+          `initialState.players.${player}.hand must match handCount`,
+          null
+        );
+      }
+      rawBoard.hand.forEach((card, index) =>
+        validateCard(card, `initialState.players.${player}.hand[${index}]`, null)
+      );
+    }
     assertNonNegativeInteger(
       rawBoard.prizesRemaining,
       `initialState.players.${player}.prizesRemaining`,
@@ -222,25 +241,44 @@ function applyEvent(state: BoardState, rawEvent: unknown, eventIndex: number): B
       }
       board.deckCount -= event.count;
       board.handCount += event.count;
+      if (event.cards !== undefined) {
+        if (!Array.isArray(event.cards) || event.cards.length !== event.count) {
+          throw new BattleLogReplayError('cards must match draw count', eventIndex);
+        }
+        event.cards.forEach((card, index) => validateCard(card, `cards[${index}]`, eventIndex));
+        if (board.hand) board.hand.push(...structuredClone(event.cards));
+      }
       break;
     }
     case 'play-active': {
       const board = playerBoard(state, event.player, eventIndex);
-      validateCard(event.card, 'card', eventIndex);
+      validatePokemonCard(event.card, 'card', eventIndex);
       if (board.active)
         throw new BattleLogReplayError('active position is already occupied', eventIndex);
       if (board.handCount === 0)
         throw new BattleLogReplayError('cannot play a card from an empty hand', eventIndex);
+      if (board.hand) {
+        const handIndex = board.hand.findIndex((card) => card.id === event.card.id);
+        if (handIndex < 0)
+          throw new BattleLogReplayError('active card is not present in known hand', eventIndex);
+        board.hand.splice(handIndex, 1);
+      }
       board.active = structuredClone(event.card);
       board.handCount--;
       break;
     }
     case 'play-bench': {
       const board = playerBoard(state, event.player, eventIndex);
-      validateCard(event.card, 'card', eventIndex);
+      validatePokemonCard(event.card, 'card', eventIndex);
       if (board.bench.length >= 5) throw new BattleLogReplayError('bench is full', eventIndex);
       if (board.handCount === 0)
         throw new BattleLogReplayError('cannot play a card from an empty hand', eventIndex);
+      if (board.hand) {
+        const handIndex = board.hand.findIndex((card) => card.id === event.card.id);
+        if (handIndex < 0)
+          throw new BattleLogReplayError('bench card is not present in known hand', eventIndex);
+        board.hand.splice(handIndex, 1);
+      }
       board.bench.push(structuredClone(event.card));
       board.handCount--;
       break;
@@ -288,6 +326,16 @@ function applyEvent(state: BoardState, rawEvent: unknown, eventIndex: number): B
       }
       board.prizesRemaining -= event.count;
       board.handCount += event.count;
+      break;
+    }
+    case 'play-trainer': {
+      playerBoard(state, event.player, eventIndex);
+      if (typeof event.cardName !== 'string') {
+        throw new BattleLogReplayError('cardName must be a string', eventIndex);
+      }
+      if (event.effect !== undefined && typeof event.effect !== 'string') {
+        throw new BattleLogReplayError('effect must be a string when provided', eventIndex);
+      }
       break;
     }
     case 'end-turn':

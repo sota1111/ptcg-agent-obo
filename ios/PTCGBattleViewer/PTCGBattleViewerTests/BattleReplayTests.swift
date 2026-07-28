@@ -91,6 +91,39 @@ final class BattleReplayTests: XCTestCase {
         XCTAssertEqual(card.retreatCostText, "無・無")
     }
 
+    func testBothSeatsShareTheSameTurnAtTurnBoundaries() throws {
+        let data = """
+        {"schemaVersion":"ptcg-battle-log/v1","battleId":"turns","initialState":{"turn":1,"currentPlayer":"あなた","players":{"あなた":{"active":null,"bench":[],"deckCount":40,"handCount":5,"discard":[],"prizesRemaining":6},"対戦相手":{"active":null,"bench":[],"deckCount":40,"handCount":5,"discard":[],"prizesRemaining":6}},"winner":null},"events":[{"type":"end-turn","nextPlayer":"対戦相手"},{"type":"end-turn","nextPlayer":"あなた"}]}
+        """.data(using: .utf8)!
+
+        let (_, snapshots) = try BattleReplay.decode(data)
+        XCTAssertEqual(snapshots.map(\.state.turn), [1, 2, 3])
+        XCTAssertEqual(snapshots.map(\.state.currentPlayer), ["あなた", "対戦相手", "あなた"])
+        XCTAssertEqual(snapshots[1].state.players.count, 2)
+    }
+
+    func testSupportsFiveNamedBenchPokemonAndMissingNameFallback() throws {
+        let data = """
+        {"schemaVersion":"ptcg-battle-log/v1","battleId":"bench","initialState":{"turn":1,"currentPlayer":"あなた","players":{"あなた":{"active":null,"bench":[{"id":"b1","name":"ピカチュウ","maxHp":100,"damage":0,"energy":[]},{"id":"b2","name":"ライチュウ","maxHp":120,"damage":0,"energy":[]},{"id":"b3","name":"パモ","maxHp":60,"damage":0,"energy":[]},{"id":"b4","name":"パモット","maxHp":90,"damage":0,"energy":[]},{"id":"b5","name":"","maxHp":100,"damage":0,"energy":[]}],"deckCount":40,"handCount":5,"discard":[],"prizesRemaining":6},"対戦相手":{"active":null,"bench":[],"deckCount":40,"handCount":5,"discard":[],"prizesRemaining":6}},"winner":null},"events":[]}
+        """.data(using: .utf8)!
+
+        let (_, snapshots) = try BattleReplay.decode(data)
+        let bench = try XCTUnwrap(snapshots[0].state.players["あなた"]?.bench)
+        XCTAssertEqual(bench.count, 5)
+        XCTAssertEqual(bench.map(\.displayName), ["ピカチュウ", "ライチュウ", "パモ", "パモット", "カード名不明"])
+    }
+
+    func testTrainerEventsDescribeTheCardEffectAndFallback() throws {
+        let data = """
+        {"schemaVersion":"ptcg-battle-log/v1","battleId":"trainers","initialState":{"turn":1,"currentPlayer":"あなた","players":{"あなた":{"active":null,"bench":[],"deckCount":40,"handCount":5,"discard":[],"prizesRemaining":6},"対戦相手":{"active":null,"bench":[],"deckCount":40,"handCount":5,"discard":[],"prizesRemaining":6}},"winner":null},"events":[{"type":"play-trainer","player":"あなた","cardName":"博士の研究","effect":"手札をすべてトラッシュし、山札を7枚引く"},{"type":"play-trainer","player":"対戦相手","cardName":"","effect":""}]}
+        """.data(using: .utf8)!
+
+        let (_, snapshots) = try BattleReplay.decode(data)
+        XCTAssertEqual(snapshots[1].event?.description, "あなた が 博士の研究 を使用：手札をすべてトラッシュし、山札を7枚引く")
+        XCTAssertEqual(snapshots[2].event?.description, "対戦相手 が トレーナーズ（名前不明） を使用：説明なし")
+        XCTAssertEqual(snapshots[2].state.turn, 1)
+    }
+
     @MainActor
     func testNavigationIsBoundedAndSupportsArbitraryPosition() {
         let model = BattleViewerModel()
