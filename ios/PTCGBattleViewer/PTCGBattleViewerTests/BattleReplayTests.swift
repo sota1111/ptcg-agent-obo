@@ -2,6 +2,11 @@ import XCTest
 @testable import PTCGBattleViewer
 
 final class BattleReplayTests: XCTestCase {
+    func testViewerHeaderUsesCompactTopEdgeHeight() {
+        XCTAssertEqual(CompactLayoutMetrics.headerHeight, 44)
+        XCTAssertLessThan(CompactLayoutMetrics.headerHeight, CompactLayoutMetrics.timelineHeight)
+    }
+
     func testCompactLayoutFitsIPhone14ContentHeightWithoutVerticalScrolling() {
         XCTAssertLessThanOrEqual(
             CompactLayoutMetrics.totalContentHeight,

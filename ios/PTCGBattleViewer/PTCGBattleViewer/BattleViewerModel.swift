@@ -5,6 +5,7 @@ enum CompactLayoutMetrics {
     static let horizontalPadding: CGFloat = 8
     static let verticalPadding: CGFloat = 4
     static let sectionSpacing: CGFloat = 4
+    static let headerHeight: CGFloat = 44
     static let timelineHeight: CGFloat = 108
     static let opponentBoardHeight: CGFloat = 218
     static let viewerBoardHeight: CGFloat = 282
