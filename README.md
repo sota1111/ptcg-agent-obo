@@ -137,6 +137,8 @@ score(a) = mean(V(a, world_k)) - λ * std(V(a, world_k))
 ### 現時点の推奨: 水単「Mega Abomasnow ex」
 
 メインタイプは **水** を推奨します。現時点の第一候補は、Mega Abomasnow ex を主力にした次の60枚です。
+マリィのオーロンゲex候補との100試合比較と候補リストは
+[`docs/deck-comparison-sot-2128.md`](docs/deck-comparison-sot-2128.md) に記録しています。
 
 | 枚数 | カード | 役割 |
 | ---: | --- | --- |
