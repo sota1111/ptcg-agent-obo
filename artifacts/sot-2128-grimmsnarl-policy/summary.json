@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "sot-2128-grimmsnarl-policy/v1",
+  "engine": "cabt",
+  "seedStart": 212850,
+  "seedEnd": 212899,
+  "seatSwap": true,
+  "matchesPerCondition": 100,
+  "specialist": {
+    "grimmsnarlWins": 33,
+    "waterWins": 67,
+    "unfinished": 0,
+    "faults": 0,
+    "averageDecisions": 127.48
+  },
+  "genericControl": {
+    "grimmsnarlWins": 22,
+    "waterWins": 78,
+    "unfinished": 0,
+    "faults": 0
+  },
+  "specialistDeltaPercentagePoints": 11
+}

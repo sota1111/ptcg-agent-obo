@@ -69,6 +69,16 @@ _YES_CONTEXTS = frozenset({41, 42, 43, 44, 46})
 # Special-condition severity (SpecialConditionType cg/api.py:48-53).
 _SPECIAL_CONDITION_SEVERITY = {3: 5, 2: 4, 4: 3, 0: 2, 1: 1}
 
+# Marnie's Grimmsnarl ex line and its damage-moving support.  The specialised
+# policy is enabled from deck identity, keeping the submitted water policy
+# unchanged while allowing the candidate deck to use the same entrypoint.
+_MARNIES_IMPIDIMP = 646
+_MARNIES_MORGREM = 647
+_MARNIES_GRIMMSNARL_EX = 648
+_MUNKIDORI = 112
+_GRIMMSNARL_DECK_SIGNATURE = frozenset({_MARNIES_IMPIDIMP,
+                                        _MARNIES_GRIMMSNARL_EX, _MUNKIDORI})
+
 
 def _is_known_context(context):
     return isinstance(context, int) and 0 <= context <= 48
@@ -89,6 +99,41 @@ def _pokemon_at(current, player_index, area, index):
         return None
 
 
+def _your_index(current):
+    value = current.get("yourIndex", 0)
+    return value if value in (0, 1) else 0
+
+
+def _card_id_at(current, player_index, area, index):
+    """Resolve a visible card or Pokémon referenced by an option."""
+    try:
+        players = current.get("players") or ()
+        side = players[player_index] if 0 <= player_index < len(players) else {}
+        if area in (_AREA_ACTIVE, _AREA_BENCH):
+            pokemon = _pokemon_at(current, player_index, area, index)
+            return pokemon.get("id") if pokemon else None
+        cards = side.get("hand") if area == 2 else side.get("discard") if area == 3 else None
+        if cards is None or index is None or not (0 <= index < len(cards)):
+            return None
+        card = cards[index]
+        return card.get("id") if isinstance(card, dict) else None
+    except Exception:
+        return None
+
+
+def _is_grimmsnarl_policy():
+    return _deck is not None and _GRIMMSNARL_DECK_SIGNATURE.issubset(set(_deck))
+
+
+def _damaged_own_pokemon(current):
+    your_index = _your_index(current)
+    players = current.get("players") or ()
+    side = players[your_index] if your_index < len(players) else {}
+    pokemon = list(side.get("active") or ()) + list(side.get("bench") or ())
+    return [p for p in pokemon if isinstance(p, dict) and
+            (p.get("maxHp", 0) or 0) > (p.get("hp", 0) or 0)]
+
+
 def _card_target_score(current, context, opt):
     """Score a CARD-target option using only board HP (no card data needed)."""
     area = opt.get("area")
@@ -96,10 +141,16 @@ def _card_target_score(current, context, opt):
     player_index = opt.get("playerIndex", 0)
     pokemon = _pokemon_at(current, player_index, area, index)
     if context in _DAMAGE_TARGET_CONTEXTS:
+        # Damage and damage-counter placement must go to the opponent.  This
+        # matters when both sides are legal targets (e.g. Adrena-Brain).
+        if player_index == _your_index(current):
+            return -1000.0
         if pokemon is None:
             return 50.0
         return 200.0 - float(pokemon.get("hp", 0) or 0)  # closest to KO first
     if context in _HEAL_TARGET_CONTEXTS:
+        if player_index != _your_index(current):
+            return -1000.0
         if pokemon is None:
             return 0.0
         return float((pokemon.get("maxHp", 0) or 0) - (pokemon.get("hp", 0) or 0))
@@ -118,10 +169,36 @@ def _score_option(current, select, opt):
     t = opt.get("type", -1)
     context = select.get("context", -1)
     if t == _OT_EVOLVE:
+        if _is_grimmsnarl_policy():
+            your_index = _your_index(current)
+            evolved_id = _card_id_at(current, your_index, opt.get("area"), opt.get("index"))
+            target = _pokemon_at(current, your_index, opt.get("inPlayArea"),
+                                 opt.get("inPlayIndex"))
+            target_id = target.get("id") if target else None
+            if evolved_id == _MARNIES_GRIMMSNARL_EX and target_id == _MARNIES_MORGREM:
+                return 130.0
+            if evolved_id == _MARNIES_MORGREM and target_id == _MARNIES_IMPIDIMP:
+                return 110.0
         return 70.0
     if t == _OT_ABILITY:
+        if _is_grimmsnarl_policy():
+            your_index = _your_index(current)
+            source_id = _card_id_at(current, your_index, opt.get("area"), opt.get("index"))
+            if source_id == _MUNKIDORI:
+                return 125.0 if _damaged_own_pokemon(current) else -5.0
         return 60.0
     if t == _OT_ATTACH:
+        if _is_grimmsnarl_policy():
+            your_index = _your_index(current)
+            target = _pokemon_at(current, your_index, opt.get("inPlayArea"),
+                                 opt.get("inPlayIndex"))
+            target_id = target.get("id") if target else None
+            energy_count = len(target.get("energies") or ()) if target else 0
+            if target_id == _MUNKIDORI and energy_count == 0:
+                return 105.0
+            if target_id in (_MARNIES_GRIMMSNARL_EX, _MARNIES_MORGREM,
+                             _MARNIES_IMPIDIMP):
+                return 95.0 - energy_count
         return 55.0 if opt.get("inPlayArea") == _AREA_ACTIVE else 45.0
     if t == _OT_PLAY:
         return 40.0
