@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "sot-2420-grimmsnarl-iterations/v1",
+  "engine": "cabt",
+  "opponents": ["ptcg-agent-matsu", "ptcg-agent-ume", "ptcg-agent-gpt"],
+  "rounds": [
+    {"round": 0, "strategyVersion": 0, "change": "SOT-2128 baseline", "wins": 0, "losses": 3, "faults": 0},
+    {"round": 1, "strategyVersion": 1, "change": "main-attacker energy first", "wins": 0, "losses": 3, "faults": 0},
+    {"round": 2, "strategyVersion": 2, "change": "prioritise setup cards", "wins": 2, "losses": 1, "faults": 0},
+    {"round": 3, "strategyVersion": 3, "change": "enable Munkidori after two main energy", "wins": 0, "losses": 3, "faults": 0}
+  ],
+  "promotedStrategyVersion": 2,
+  "totalMatches": 12,
+  "totalFaults": 0
+}

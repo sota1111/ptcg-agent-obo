@@ -134,39 +134,42 @@ score(a) = mean(V(a, world_k)) - λ * std(V(a, world_k))
 
 ## デッキ戦略
 
-### 現時点の推奨: 水単「Mega Abomasnow ex」
+### 現時点の推奨: 「マリィのオーロンゲex」
 
-メインタイプは **水** を推奨します。現時点の第一候補は、Mega Abomasnow ex を主力にした次の60枚です。
-マリィのオーロンゲex候補との100試合比較と候補リストは
-[`docs/deck-comparison-sot-2128.md`](docs/deck-comparison-sot-2128.md) に記録しています。
+SOT-2420では、候補だったマリィのオーロンゲex構成を提出用 `deck.csv` に採用し、松・梅・GPTの
+実エージェントとの対戦を踏まえて方策を3回更新しました。反復結果と採否は
+[`docs/grimmsnarl-iterations-sot-2420.md`](docs/grimmsnarl-iterations-sot-2420.md) に記録しています。
+小標本の最終ラウンドだけを採用根拠にせず、3戦2勝だった第2改善を昇格し、第3改善は棄却しています。
 
 | 枚数 | カード | 役割 |
 | ---: | --- | --- |
-| 35 | Basic Water Energy | 攻撃・Mega Abomasnow ex の `Hammer-lanche` の打点源 |
-| 4 | Snover | Mega Abomasnow ex の進化元 |
-| 4 | Mega Abomasnow ex | 350 HP の主力アタッカー |
-| 2 | Kyogre | たねの副アタッカー兼、序盤の受け |
-| 4 | Mega Signal | 主力へのアクセス |
-| 1 | Maximum Belt | ACE SPEC。対exの打点補助 |
-| 2 | Cyrano | 盤面展開 |
-| 4 | Lillie's Determination | 手札更新 |
-| 4 | Waitress | ドロー |
+| 9 | Basic Darkness Energy | 主攻撃用エネルギー |
+| 3 / 2 / 3 | Marnie's Impidimp / Morgrem / Grimmsnarl ex | 主力進化ライン |
+| 4 | Munkidori | ダメカン移動 |
+| 2 / 2 | Snorunt / Froslass | ダメージ補助 |
+| 1 / 1 / 1 | Tatsugiri / Budew / Yveltal | 展開・妨害・副アタッカー |
+| 2 / 3 / 4 | Rare Candy / Buddy-Buddy Poffin / Poké Pad | 展開安定化 |
+| 23 | その他トレーナーズ | 回収・入替・ドロー・妨害 |
 | **60** | **合計** | |
 
 `deck.csv` のカードID順では次の構成です。
 
 ```text
-3×35, 721×2, 722×4, 723×4, 1145×4, 1158×1,
-1205×2, 1227×4, 1235×4
+7×9, 104×2, 112×4, 122×1, 235×1, 646×3, 647×2, 648×3,
+689×1, 860×2, 1079×2, 1086×3, 1092×1, 1097×3, 1116×1,
+1152×4, 1174×1, 1182×4, 1208×1, 1219×4, 1227×4, 1259×4
 ```
 
-水単を推す理由は、単にタイプ相性ではなく、次の3点です。
+この方策では次を優先します。
 
-1. **方策が単純でAIが扱いやすい。** Snoverを置き、Mega Abomasnow exへ進化し、水エネルギーを集めて攻撃する主線が明確です。
-2. **高耐久と高い再現性を両立する。** 350 HPの主力、厚いエネルギー、サーチ4枚、ドロー8枚で、複雑な多色コンボより事故と探索分岐を抑えられます。
-3. **実測で暫定首位。** 同一greedy方策で26候補を比較したローカル評価では、25,800試合・fault 0。confirm段階でこの構成は勝率81.65%（3,112決着、Wilson 95% CI 80.25–82.97%）で、2位のCrustle構成（76.46%、CI 74.94–77.92%）と信頼区間が分離しました。
+1. ImpidimpとMunkidori、Buddy-Buddy Poffin、Rare Candy、Poké Padを汎用PLAYより先に展開する。
+2. Impidimp → Morgrem → Grimmsnarl exの成立済み進化を優先する。
+3. 最初のエネルギーをMunkidoriではなく主力進化ラインに付け、攻撃テンポを確保する。
+4. ダメージを移せる場合だけAdrena-Brainを使い、相手の残りHPが少ない対象へ寄せる。
 
-ただし、これは **現在のローカル評価系における最良の初期値** であり、大会全体に対する絶対最適の証明ではありません。greedy方策での比較なので、提出用探索エージェントとの相互作用や本番上位メタで順位が変わる可能性があります。特に、たねポケモンが6枚しかなく盤面全滅リスクがある点と、35エネルギーゆえに手札の選択肢が細くなる点は継続監視します。
+今回の各ラウンドは3試合の探索的比較であり、絶対最適の証明ではありません。seedと席順を変えた
+大規模confirm評価は今後の課題です。再現用に `GRIMMSNARL_STRATEGY_VERSION=0..3` を指定でき、
+未指定時は昇格済みのversion 2を使います。
 
 ### 更新方法
 

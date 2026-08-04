@@ -22,6 +22,7 @@ def pokemon(card_id, hp=100, max_hp=100, energies=None):
 class GrimmsnarlPolicyTest(unittest.TestCase):
     def setUp(self):
         submission._deck = [646, 648, 112] + [7] * 57
+        submission._GRIMMSNARL_STRATEGY_VERSION = 3
         self.current = {
             "yourIndex": 1,
             "players": [
@@ -65,7 +66,7 @@ class GrimmsnarlPolicyTest(unittest.TestCase):
         }
         self.assertEqual(submission._choose(self.current, select), [2])
 
-    def test_first_dark_attachment_enables_munkidori(self):
+    def test_first_dark_attachment_builds_main_attacker(self):
         select = {
             "context": 0,
             "minCount": 1,
@@ -73,6 +74,33 @@ class GrimmsnarlPolicyTest(unittest.TestCase):
             "option": [
                 {"type": 8, "inPlayArea": 4, "inPlayIndex": 0},
                 {"type": 8, "inPlayArea": 5, "inPlayIndex": 0},
+            ],
+        }
+        self.assertEqual(submission._choose(self.current, select), [0])
+
+    def test_third_cycle_enables_munkidori_after_main_is_ready(self):
+        self.current["players"][1]["active"][0]["energies"] = [7, 7]
+        select = {
+            "context": 0,
+            "minCount": 1,
+            "maxCount": 1,
+            "option": [
+                {"type": 8, "inPlayArea": 4, "inPlayIndex": 0},
+                {"type": 8, "inPlayArea": 5, "inPlayIndex": 0},
+            ],
+        }
+        self.assertEqual(submission._choose(self.current, select), [1])
+
+    def test_second_cycle_prioritises_basic_setup(self):
+        submission._GRIMMSNARL_STRATEGY_VERSION = 2
+        self.current["players"][1]["hand"] = [{"id": 999}, {"id": 646}]
+        select = {
+            "context": 0,
+            "minCount": 1,
+            "maxCount": 1,
+            "option": [
+                {"type": 7, "area": 2, "index": 0},
+                {"type": 7, "area": 2, "index": 1},
             ],
         }
         self.assertEqual(submission._choose(self.current, select), [1])
