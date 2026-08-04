@@ -1,0 +1,12 @@
+{"round":0,"strategyVersion":0,"seed":242010,"opponent":"matsu","oboSeat":"first","outcome":"second","oboWon":false,"fault":null,"decisions":163}
+{"round":0,"strategyVersion":0,"seed":242011,"opponent":"ume","oboSeat":"second","outcome":"first","oboWon":false,"fault":null,"decisions":132}
+{"round":0,"strategyVersion":0,"seed":242012,"opponent":"gpt","oboSeat":"first","outcome":"second","oboWon":false,"fault":null,"decisions":124}
+{"round":1,"strategyVersion":1,"seed":242020,"opponent":"matsu","oboSeat":"second","outcome":"first","oboWon":false,"fault":null,"decisions":113}
+{"round":1,"strategyVersion":1,"seed":242021,"opponent":"ume","oboSeat":"first","outcome":"second","oboWon":false,"fault":null,"decisions":154}
+{"round":1,"strategyVersion":1,"seed":242022,"opponent":"gpt","oboSeat":"second","outcome":"first","oboWon":false,"fault":null,"decisions":99}
+{"round":2,"strategyVersion":2,"seed":242030,"opponent":"matsu","oboSeat":"first","outcome":"first","oboWon":true,"fault":null,"decisions":100}
+{"round":2,"strategyVersion":2,"seed":242031,"opponent":"ume","oboSeat":"second","outcome":"first","oboWon":false,"fault":null,"decisions":140}
+{"round":2,"strategyVersion":2,"seed":242032,"opponent":"gpt","oboSeat":"first","outcome":"first","oboWon":true,"fault":null,"decisions":113}
+{"round":3,"strategyVersion":3,"seed":242040,"opponent":"matsu","oboSeat":"second","outcome":"first","oboWon":false,"fault":null,"decisions":136}
+{"round":3,"strategyVersion":3,"seed":242041,"opponent":"ume","oboSeat":"first","outcome":"second","oboWon":false,"fault":null,"decisions":168}
+{"round":3,"strategyVersion":3,"seed":242042,"opponent":"gpt","oboSeat":"second","outcome":"first","oboWon":false,"fault":null,"decisions":121}

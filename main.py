@@ -1,7 +1,7 @@
 """Kaggle Pokémon TCG AI Battle submission entrypoint (SOT-1930).
 
-Current water ("水単") strategy — Mega Abomasnow ex, 60 cards in ``deck.csv``
-(README §デッキ戦略). This is a self-contained, dependency-free realisation of
+Current Marnie's Grimmsnarl ex strategy, 60 cards in ``deck.csv`` (README
+§デッキ戦略). This is a self-contained, dependency-free realisation of
 the README's Safety layer: it reads the engine's legal options
 (``obs.select.option``) as the single source of truth and picks a legal action
 with a greedy option-type priority, degrading to a raw-legal action on any
@@ -78,6 +78,21 @@ _MARNIES_GRIMMSNARL_EX = 648
 _MUNKIDORI = 112
 _GRIMMSNARL_DECK_SIGNATURE = frozenset({_MARNIES_IMPIDIMP,
                                         _MARNIES_GRIMMSNARL_EX, _MUNKIDORI})
+_GRIMMSNARL_STRATEGY_VERSION = max(
+    0, min(3, int(os.environ.get("GRIMMSNARL_STRATEGY_VERSION", "2"))))
+
+# Setup cards in the SOT-2420 list.  The version switch keeps every measured
+# iteration reproducible while the default always selects the promoted policy.
+_RARE_CANDY = 860
+_BUDDY_BUDDY_POFFIN = 1086
+_POKE_PAD = 1182
+_GRIMMSNARL_SETUP_CARDS = {
+    _MARNIES_IMPIDIMP: 104.0,
+    _MUNKIDORI: 100.0,
+    _BUDDY_BUDDY_POFFIN: 96.0,
+    _RARE_CANDY: 92.0,
+    _POKE_PAD: 88.0,
+}
 
 
 def _is_known_context(context):
@@ -194,13 +209,32 @@ def _score_option(current, select, opt):
                                  opt.get("inPlayIndex"))
             target_id = target.get("id") if target else None
             energy_count = len(target.get("energies") or ()) if target else 0
-            if target_id == _MUNKIDORI and energy_count == 0:
-                return 105.0
             if target_id in (_MARNIES_GRIMMSNARL_EX, _MARNIES_MORGREM,
                              _MARNIES_IMPIDIMP):
+                # Cycle 1: stop spending the first attachment on a support
+                # Pokémon before the main attacker can threaten an attack.
+                if _GRIMMSNARL_STRATEGY_VERSION >= 1:
+                    return 112.0 - energy_count
                 return 95.0 - energy_count
+            if target_id == _MUNKIDORI and energy_count == 0:
+                # Cycle 3: after two attachments are committed to the main
+                # line, enable Adrena-Brain; before then keep tempo on attacker.
+                if _GRIMMSNARL_STRATEGY_VERSION >= 3:
+                    side = (current.get("players") or ({},))[_your_index(current)]
+                    in_play = list(side.get("active") or ()) + list(side.get("bench") or ())
+                    main_energy = max((len(p.get("energies") or ()) for p in in_play
+                                       if isinstance(p, dict) and p.get("id") in (
+                                           _MARNIES_IMPIDIMP, _MARNIES_MORGREM,
+                                           _MARNIES_GRIMMSNARL_EX)), default=0)
+                    return 114.0 if main_energy >= 2 else 80.0
+                return 90.0 if _GRIMMSNARL_STRATEGY_VERSION >= 1 else 105.0
         return 55.0 if opt.get("inPlayArea") == _AREA_ACTIVE else 45.0
     if t == _OT_PLAY:
+        if _is_grimmsnarl_policy() and _GRIMMSNARL_STRATEGY_VERSION >= 2:
+            card_id = _card_id_at(current, _your_index(current), opt.get("area"),
+                                  opt.get("index"))
+            if card_id in _GRIMMSNARL_SETUP_CARDS:
+                return _GRIMMSNARL_SETUP_CARDS[card_id]
         return 40.0
     if t == _OT_ATTACK:
         return 20.0
@@ -281,7 +315,7 @@ _deck = None
 
 
 def agent(obs_dict):
-    """Pokémon TCG AI Battle agent — current 水単 strategy (SOT-1930).
+    """Pokémon TCG AI Battle agent — Grimmsnarl strategy (SOT-2420).
 
     Returns a list of option indices, each ``>= 0`` and ``< len(select.option)``,
     of length in ``[select.minCount, select.maxCount]`` with no duplicates. On
